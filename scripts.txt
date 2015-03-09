@@ -1,0 +1,77 @@
+
+
+
+127.0.0.1:7000> SCRIPT LOAD "redis.call('incr', 'messages')"
+127.0.0.1:7000> SSUBSCRIBE e2e5237dbb8a0827abff6e678f2f6db0254e77f5 twitter
+127.0.0.1:7000> GET messages
+"116"
+
+
+127.0.0.1:7000> SCRIPT LOAD "redis.call('set', 'last_message', ARGV[2])"
+"b7db77bad52425dc0af35990055a4d76768ca193"
+127.0.0.1:7000> SSUBSCRIBE b7db77bad52425dc0af35990055a4d76768ca193 twitter
+OK
+127.0.0.1:7000> get last_message
+"{\"contributors\": null, \"truncated\": false, \"text\": \"@sarahhpolydoro mentira, tadinha \\ud83d\\ude2a\", \"in_reply_to_status_id\": 574640169153916929, \"id\": 574640927337222144, \"favorite_count\": 0, \"source\": \"<a href=\\\"http://twitter.com/download/iphone\\\" rel=\\\"nofollow\\\">Twitter for iPhone</a>\", \"retweeted\": false, \"coordinates\": {\"type\": \"Point\", \"coordinates\": [-43.36406, -22.930876]}, \"timestamp_ms\": \"1425840048046\", \"entities\": {\"user_mentions\": [{\"id\": 205350769, \"indices\": [0, 15], \"id_str\": \"205350769\", \"screen_name\": \"sarahhpolydoro\", \"name\": \"Sarah Polydoro\"}], \"symbols\": [], \"trends\": [], \"hashtags\": [], \"urls\": []}, \"in_reply_to_screen_name\": \"sarahhpolydoro\", \"id_str\": \"574640927337222144\", \"retweet_count\": 0, \"in_reply_to_user_id\": 205350769, \"favorited\": false, \"user\": {\"follow_request_sent\": null, \"profile_use_background_image\": false, \"default_profile_image\": false, \"id\": 58081612, \"verified\": false, \"profile_image_url_https\": \"https://pbs.twimg.com/profile_images/569236635376971776/nRlnpZFw_normal.jpeg\", \"profile_sidebar_fill_color\": \"000000\", \"profile_text_color\": \"853D3D\", \"followers_count\": 838, \"profile_sidebar_border_color\": \"FFFFFF\", \"id_str\": \"58081612\", \"profile_background_color\": \"FFFFFF\", \"listed_count\": 3, \"profile_background_image_url_https\": \"https://pbs.twimg.com/profile_background_images/378800000077291359/12b930dec0cfe11baaf1e97f347e4465.jpeg\", \"utc_offset\": -10800, \"statuses_count\": 84517, \"description\": \"honeymoon ave\", \"friends_count\": 641, \"location\": \"Rio de Janeiro, Brasil\", \"profile_link_color\": \"000000\", \"profile_image_url\": \"http://pbs.twimg.com/profile_images/569236635376971776/nRlnpZFw_normal.jpeg\", \"following\": null, \"geo_enabled\": true, \"profile_banner_url\": \"https://pbs.twimg.com/profile_banners/58081612/1423684096\", \"profile_background_image_url\": \"http://pbs.twimg.com/profile_background_images/378800000077291359/12b930dec0cfe11baaf1e97f347e4465.jpeg\", \"name\": \"amanda\", \"lang\": \"pt\", \"profile_background_tile\": true, \"favourites_count\": 15029, \"screen_name\": \"mandspinheiro\", \"notifications\": null, \"url\": null, \"created_at\": \"Sun Jul 19 01:12:22 +0000 2009\", \"contributors_enabled\": false, \"time_zone\": \"Santiago\", \"protected\": false, \"default_profile\": false, \"is_translator\": false}, \"geo\": {\"type\": \"Point\", \"coordinates\": [-22.930876, -43.36406]}, \"in_reply_to_user_id_str\": \"205350769\", \"possibly_sensitive\": false, \"lang\": \"pt\", \"created_at\": \"Sun Mar 08 18:40:48 +0000 2015\", \"filter_level\": \"low\", \"in_reply_to_status_id_str\": \"574640169153916929\", \"place\": {\"full_name\": \"Rio de Janeiro, Brasil\", \"url\": \"https://api.twitter.com/1.1/geo/id/97bcdfca1a2dca59.json\", \"country\": \"Brasil\", \"place_type\": \"city\", \"bounding_box\": {\"type\": \"Polygon\", \"coordinates\": [[[-43.795449, -23.08302], [-43.795449, -22.7398234], [-43.0877068, -22.7398234], [-43.0877068, -23.08302]]]}, \"country_code\": \"BR\", \"attributes\": {}, \"id\": \"97bcdfca1a2dca59\", \"name\": \"Rio de Janeiro\"}}"
+
+
+
+127.0.0.1:7000> SCRIPT LOAD "redis.call('set', 'last_message_text', cjson.decode(ARGV[2]).text)"
+"34bb19320a895cc6c87d22401b3d732fbd9e3f16"
+127.0.0.1:7000> SSUBSCRIBE 34bb19320a895cc6c87d22401b3d732fbd9e3f16 twitter
+OK
+127.0.0.1:7000> GET last_message_text
+"Almo\xc3\xa7ar que daqui a pouco tem gelo"
+
+
+127.0.0.1:7000> SCRIPT LOAD "redis.call('publish', 'twitter_text', cjson.decode(ARGV[2]).text)"
+"32dbd2f474982a61f883f8bb9919a7a217e83af9"
+127.0.0.1:7000> SSUBSCRIBE 32dbd2f474982a61f883f8bb9919a7a217e83af9 twitter
+OK
+127.0.0.1:7000> SUBSCRIBE twitter_text
+Reading messages... (press Ctrl-C to quit)
+1) "subscribe"
+2) "twitter_text"
+3) (integer) 1
+1) "message"
+2) "twitter_text"
+3) "@FluminenseFC: Marcos Felipe; Breno,Derlan,Nogueira,Ayrton; Bonilha,Douglas,Daniel; Paulinho,Patrick e Matheus Pato.\n#Sub20"
+1) "message"
+2) "twitter_text"
+3) "melhor musica \xe2\x99\xa1 Me faz se sentir uma queen \xe2\x99\xa1\n#Vote1DUK #KCA http://t.co/kkSX5VbIeG"
+
+
+
+127.0.0.1:7000> SCRIPT LOAD "for hash_tag in ARGV[2]:gmatch('#%S+') do redis.call('publish', 'hash_tags', hash_tag) end"
+"70099b9f70780c7cc34852a3879aa046308040df"
+127.0.0.1:7000> SSUBSCRIBE 70099b9f70780c7cc34852a3879aa046308040df twitter_text
+OK
+127.0.0.1:7000> SUBSCRIBE hash_tags
+Reading messages... (press Ctrl-C to quit)
+1) "subscribe"
+2) "hash_tags"
+3) (integer) 1
+1) "message"
+2) "hash_tags"
+3) "#VaiPraCimaDelasTimao"
+1) "message"
+2) "hash_tags"
+3) "#XVdaLu"
+
+
+
+127.0.0.1:7000> SCRIPT LOAD "redis.call('zincrby', 'hashtags', 1, ARGV[2])"
+"8a76441d0653d1842565729a867c4a8254d3c092"
+127.0.0.1:7000> SSUBSCRIBE 8a76441d0653d1842565729a867c4a8254d3c092 hash_tags
+OK
+127.0.0.1:7000> ZREVRANGEBYSCORE hashtags +inf 0 WITHSCORES LIMIT 0 5
+ 1) "#KCA"
+ 2) "49"
+ 3) "#VoteFifthHarmony"
+ 4) "30"
+ 5) "#Vote1DUK"
+ 6) "16"
+ 7) "#VoteLuanSantana"
+ 8) "3"
+ 9) "#AmanhaTalitaAraujoNoPaparazzo"
+10) "2"
